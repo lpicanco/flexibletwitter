@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="init()">
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.PopUpButton;
+			import mx.logging.Log;
+			import mx.managers.PopUpManager;
+			import mx.controls.Alert;
+			import mx.binding.utils.BindingUtils;
+			import twitter.api.data.TwitterUser;
+			import twitter.api.events.TwitterEvent;
+			import com.neutrine.flexibletwitter.common.DataBroker;
+			import twitter.api.Twitter;
+			import com.neutrine.flexibletwitter.view.controllers.LoginController;
+			
+			private var tw: Twitter;
+			private var timer:Timer;
+			
+			[Bindable]
+			private var friendsTimeline: Array
+			[Bindable]
+			private var yourTimeline: Array
+			[Bindable]
+			private var publicTimeline: Array
+			[Bindable]
+			private var replies: Array
+
+			private function init(): void {			
+				var logonWindow: Login = new Login();
+				logonWindow.addEventListener("logon", loadTwitts);
+				PopUpManager.addPopUp(logonWindow, this, true);
+				PopUpManager.centerPopUp(logonWindow);				
+			}
+			
+			private function loadTwitts(event: Event): void {
+				timer = new Timer(120000);
+				timer.delay = 120000;
+				timer.addEventListener(TimerEvent.TIMER, timeHandler);
+				
+				tw = DataBroker.getTwitter();
+				refreshTwitts();
+				timer.start();				
+			}
+			
+			private function refreshTwitts(): void {
+				tw.addEventListener(TwitterEvent.ON_FRIENDS_TIMELINE_RESULT, loadFriendsTimelineHandler);
+				tw.addEventListener(TwitterEvent.ON_PUBLIC_TIMELINE_RESULT, loadPublicTimelineHandler);
+				tw.addEventListener(TwitterEvent.ON_REPLIES, loadRepliesHandler);
+				loadUserTimeLine();
+				tw.loadFriendsTimeline(tw.getUsername());			
+				tw.loadPublicTimeline();
+				tw.loadReplies();				
+			}
+						
+			private function loadUserTimeLine(): void {
+				tw.addEventListener(TwitterEvent.ON_USER_TIMELINE_RESULT, loadYourTimelineHandler);
+				tw.loadUserTimeline(tw.getUsername());				
+			}
+			
+			private function postMessage(): void {
+				var tw: Twitter = DataBroker.getTwitter();
+				tw.addEventListener(TwitterEvent.ON_SET_STATUS, postMessageHandler);
+				tw.setStatus(txtUpdateMessage.text);
+			}						
+			
+			private function timeHandler(event: TimerEvent): void {
+				refreshTwitts();	
+			}
+			
+			private function loadFriendsTimelineHandler(event: TwitterEvent): void {
+				friendsTimeline = event.data as Array;
+			}
+
+			private function loadYourTimelineHandler(event: TwitterEvent): void {
+				yourTimeline = event.data as Array;
+			}
+
+			private function loadPublicTimelineHandler(event: TwitterEvent): void {
+				publicTimeline = event.data as Array;
+			}
+			
+			private function loadRepliesHandler(event: TwitterEvent): void {
+				replies = event.data as Array;
+			}
+			
+			private function postMessageHandler(event: TwitterEvent): void {
+				txtUpdateMessage.text = "";
+				timer.delay = 5000;
+			}
+		]]>
+	</mx:Script>
+
+	<mx:Label x="10" y="10" text="Flexible Twitter" fontWeight="bold" color="#FFFFFF" fontSize="27"/>
+	
+	<mx:TextArea height="68" top="56" left="10" right="10" id="txtUpdateMessage" wordWrap="true"/>
+	<mx:Button label="Update" right="10" top="132" id="btnUpdate" click="postMessage()"/>
+
+	<mx:TabNavigator id="tabNavigator" left="10" top="164" right="9" bottom="9">
+		<mx:Canvas width="100%" height="100%" label="Friends Timeline" id="tblFriendsTimeLine">
+			<mx:VBox left="10" top="10" bottom="10" right="20">
+				<mx:Repeater id="rptFriendsTimeline" dataProvider="{friendsTimeline}">
+					<mx:Canvas width="100%" borderStyle="solid">						
+						<mx:Image source="{String(rptFriendsTimeline.currentItem.user.profileImageUrl)}" left="0" top="0" toolTip="{String(rptFriendsTimeline.currentItem.user.name)}"/>
+						<mx:TextArea wordWrap="true" text="{String(rptFriendsTimeline.currentItem.text)}" right="15" editable="false" left="50" borderStyle="none"/>
+					</mx:Canvas>
+				</mx:Repeater>
+			</mx:VBox>
+		</mx:Canvas>
+		<mx:Canvas label="Your Timeline" width="100%" height="100%">
+			<mx:VBox left="10" top="10" bottom="10" right="20">
+				<mx:Repeater id="rptYourTimeline" dataProvider="{yourTimeline}">
+					<mx:Canvas width="100%" borderStyle="solid">						
+						<mx:Image source="{String(rptYourTimeline.currentItem.user.profileImageUrl)}" left="0" top="0" toolTip="{String(rptYourTimeline.currentItem.user.name)}"/>
+						<mx:TextArea wordWrap="true" text="{String(rptYourTimeline.currentItem.text)}" right="15" editable="false" y="0" left="50" borderStyle="none"/>						
+					</mx:Canvas>
+				</mx:Repeater>
+			</mx:VBox>
+		</mx:Canvas>
+		<mx:Canvas label="Public Timeline" width="100%" height="100%">
+			<mx:VBox left="10" top="10" bottom="10" right="20">
+				<mx:Repeater id="rptPublicTimeline" dataProvider="{publicTimeline}">
+					<mx:Canvas width="100%" borderStyle="solid">						
+						<mx:Image source="{String(rptPublicTimeline.currentItem.user.profileImageUrl)}" left="0" top="0" toolTip="{String(rptPublicTimeline.currentItem.user.name)}"/>
+						<mx:TextArea wordWrap="true" text="{String(rptPublicTimeline.currentItem.text)}" right="15" editable="false" y="0" left="50" borderStyle="none"/>						
+					</mx:Canvas>
+				</mx:Repeater>
+			</mx:VBox>
+		</mx:Canvas>
+		<mx:Canvas label="Replies" width="100%" height="100%">
+			<mx:VBox left="10" top="10" bottom="10" right="20">
+				<mx:Repeater id="rptReplies" dataProvider="{replies}">
+					<mx:Canvas width="100%" borderStyle="solid">						
+						<mx:Image source="{String(rptReplies.currentItem.user.profileImageUrl)}" left="0" top="0" toolTip="{String(rptReplies.currentItem.user.name)}"/>
+						<mx:TextArea wordWrap="true" text="{String(rptReplies.currentItem.text)}" right="15" editable="false" y="0" left="50" borderStyle="none"/>						
+					</mx:Canvas>
+				</mx:Repeater>
+			</mx:VBox>
+		</mx:Canvas>
+	</mx:TabNavigator>
+</mx:Application>

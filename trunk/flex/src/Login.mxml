@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<mx:TitleWindow xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" width="336" height="152" title="Login" showCloseButton="false">	
+	<mx:Script>
+		<![CDATA[
+			import mx.events.ValidationResultEvent;
+			import mx.managers.PopUpManager;
+			import com.neutrine.flexibletwitter.common.DataBroker;
+			import twitter.api.Twitter;
+			import mx.logging.Log;
+			
+			private function btnLoginClick(): void {
+				
+				if (loginValidator.validate().type == ValidationResultEvent.VALID) {
+					var tw: Twitter = DataBroker.getTwitter();
+					tw.setAuth(txtLogin.text, "");
+					dispatchEvent(new Event("logon"));
+					PopUpManager.removePopUp(this);
+				}
+			} 
+		]]>
+	</mx:Script>
+	
+	<mx:Metadata>
+	[Event("logon")]
+	</mx:Metadata>
+	
+    <mx:StringValidator id="loginValidator" source="{txtLogin}" property="text" minLength="1"/>
+
+	<mx:Form x="10" y="10" width="292" height="62">
+		<mx:FormItem label="Twitter login">
+			<mx:TextInput width="156" id="txtLogin"/>
+		</mx:FormItem>
+<!--		
+		<mx:FormItem label="Twitter password">
+			<mx:TextInput width="156" id="txtPassword" displayAsPassword="true"/>
+		</mx:FormItem>
+-->		
+	</mx:Form>
+	<mx:Button label="Login" right="10" bottom="10" id="btnLogin" click="btnLoginClick()"/>
+	
+</mx:TitleWindow>
